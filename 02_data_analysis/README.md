@@ -157,6 +157,9 @@ px <- ggarrange(plot1, plot2, ncol = 2,  align = "hv", common.legend = T)
 px
 ```
 
+<img width="1343" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/9c3db052-0dce-4694-944f-4d2c5ea34514">
+
+
 ## PERMANOVA - ITS
 
 ```R
@@ -181,6 +184,9 @@ plot2 <- plot.nmds(ps.its_n, "wunifrac")
 px <- ggarrange(plot1, plot2, ncol = 2,  align = "hv", common.legend = T)
 px
 ```
+
+<img width="1069" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/8e26e0fb-176f-4885-874f-cdeeccf907e5">
+
 
 ## Diversity - 16S
 
@@ -260,6 +266,9 @@ px <- ggarrange(div_plot1, div_plot3, div_plot2, div_plot4,
                 ncol = 4,  align = "hv")
 px
 ```
+
+<img width="1292" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/9092250c-1c26-4dcc-aeb8-f56534547450">
+
 
 ### Test
 
@@ -381,6 +390,9 @@ px <- ggarrange(div_plot1, div_plot3, div_plot2, div_plot4,
 px
 ```
 
+<img width="1292" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/ad319d7e-749c-4346-9958-153a65efd651">
+
+
 ### Test
 
 Figure 2 and Table S1.
@@ -485,6 +497,9 @@ px <- ggarrange(plot1, plot2, plot3, ncol = 3,  align = "hv")
 px
 ```
 
+<img width="1297" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/01dc34e5-92b3-43cc-8b7a-ad65097c12a6">
+
+
 ## Differential abundance of microbial taxa - ITS
 
 Figure 3, panels D-F.
@@ -501,6 +516,9 @@ plot3 <- plot.diff.taxa(df.da.RS.its, "root", "shoot", "shoot vs root")
 px <- ggarrange(plot1, plot2, plot3, ncol = 3,  align = "hv")
 px
 ```
+
+<img width="1297" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/08d419fa-8750-47de-a612-684381a15b22">
+
 
 ## ASVs shared between compartments - 16S
 
@@ -612,6 +630,9 @@ density_plot1 <- ggplot(nd_df, aes(x = observed, y = variable)) +
 density_plot1
 ```
 
+<img width="638" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/b535e841-5153-4477-8c31-33ac0a1da529">
+
+
 ### Test
 
 ```R
@@ -701,6 +722,9 @@ density_plot2 <- ggplot(nd_df, aes(x = observed, y = variable)) +
 density_plot2
 ```
 
+<img width="638" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/5a543d08-2769-4b69-906f-d7a36ed64a66">
+
+
 ### Test
 
 ```R
@@ -762,6 +786,9 @@ betapart_plot1 <- ggplot(bnti, aes(x = compartment, y = -mntd.obs.z, fill = comp
 betapart_plot1
 ```
 
+<img width="423" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/896662dd-d57c-43e0-b6f7-9064893bc866">
+
+
 Figure 5, panel C.
 
 ```R
@@ -792,6 +819,9 @@ betapart_plot1 <- ggplot(bnti, aes(x = compartment, y = -mntd.obs.z, fill = comp
   ylim(-2.5, 9)
 betapart_plot1
 ```
+
+<img width="423" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/591cd828-0d51-448a-be17-fad2476d5227">
+
 
 ## beta-NTI - ITS
 
@@ -827,6 +857,9 @@ betapart_plot1 <- ggplot(bnti, aes(x = compartment, y = -mntd.obs.z, fill = comp
 betapart_plot1
 ```
 
+<img width="423" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/6b504ef6-93a3-4587-96ca-08c0e54a8049">
+
+
 Figure 5, panel D.
 
 ```R
@@ -857,6 +890,9 @@ betapart_plot1 <- ggplot(bnti, aes(x = compartment, y = -mntd.obs.z, fill = comp
   ylim(-2.5, 9)
 betapart_plot1
 ```
+
+<img width="423" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/29ec727d-cc5f-483a-8196-9a7930ced6df">
+
 
 ## Taxa plots
 
@@ -897,6 +933,9 @@ taxa_plot <- ggplot(dat, aes(x = as.factor(compartment), y = cs, fill = Genus)) 
 taxa_plot
 ```
 
+<img width="851" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/57aab6f6-0426-4b29-a574-bd887b31566d">
+
+
 ### ITS
 
 Figure S3.
@@ -934,6 +973,9 @@ taxa_plot <- ggplot(dat, aes(x = as.factor(compartment), y = cs, fill = Genus)) 
 taxa_plot
 ```
 
+<img width="527" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/e3086c5d-a8a0-4bae-b6ab-1b40fdd1850d">
+
+
 ### Gnotobiotic plants
 
 Figure S4, panel A.
@@ -961,6 +1003,9 @@ taxa_plot <- ggplot(dat.ctrl1, aes(x = as.factor(Sample), y = cs, fill = Genus))
 taxa_plot
 ```
 
+<img width="856" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/17e3e65c-fdf5-4b3b-9c4d-6a1f2cb15cd2">
+
+
 Figure S4, panel B.
 
 ```R
@@ -985,3 +1030,5 @@ taxa_plot <- ggplot(dat.ctrl1, aes(x = as.factor(Sample), y = cs, fill = Genus))
                         labs(y = "Relative abundance", x="")
 taxa_plot
 ```
+
+<img width="856" alt="image" src="https://github.com/amalacrino/gnotobiotic_lettuce/assets/21124426/86ecd313-d8a7-485d-acec-fa233253c5c3">
