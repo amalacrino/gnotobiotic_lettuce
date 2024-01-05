@@ -983,7 +983,6 @@ taxa_plot <- ggplot(dat.ctrl1, aes(x = as.factor(Sample), y = cs, fill = Genus))
                               panel.grid = element_blank()) +
                         scale_y_continuous(labels = scales::percent) +
                         scale_fill_manual(values = mycolors) +
-                        labs(y = "Relative abundance", x="") 
-ggsave(taxa_plot, filename = "figures/taxa_its_ctrl.pdf", dpi = 600,  width = 8, height = 5, units = "in")
+                        labs(y = "Relative abundance", x="")
 taxa_plot
 ```
