@@ -181,16 +181,243 @@ px <- ggarrange(plot1, plot2, ncol = 2,  align = "hv", common.legend = T)
 px
 ```
 
-```R
+## Diversity - 16S
 
+### Plot
+
+Figure 2, panels A-D.
+
+```R
+div <- microbiome::alpha(ps.16s, index = c("observed", "diversity_shannon", "dominance_simpson"))
+otus <- as.data.frame((otu_table(ps.16s)))
+tree <- phy_tree(ps.16s)
+div.pd <- pd(otus, tree, include.root = FALSE)
+div.2 <- cbind(sample_data(ps.16s), div)
+div.2 <- cbind(div.2, div.pd)
+
+div_plot1 <- ggplot(div.2, aes(x = compartment, y = PD, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  labs(y = "Phylogenetic diversity") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        legend.position = "none") +
+  ylim(0, 15) +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot"))
+
+div_plot2 <- ggplot(div.2, aes(x = compartment, y = dominance_simpson, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  labs(y = "Simpson's dominance") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        legend.position = "none") +
+  ylim(0, 0.05) +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot"))
+
+div_plot3 <- ggplot(div.2, aes(x = compartment, y = diversity_shannon, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  labs(y = "Shannon's diversity") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        legend.position = "none") +
+  ylim(0, 7) +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot"))
+
+div_plot4 <- ggplot(div.2, aes(x = compartment, y = observed, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  labs(y = "Observed richness") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        legend.position = "none") +
+  ylim(0, 400) +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot"))
+
+px <- ggarrange(div_plot1, div_plot3, div_plot2, div_plot4,
+                ncol = 4,  align = "hv")
+px
 ```
 
-```R
+### Test
 
+Figure 2 and Table S1.
+
+#### Model PD
+```R
+model <- lm(PD ~ compartment, data = div.2)
+Anova(model)
+m1 <- emmeans(model, "compartment")
+pairs(m1)
+multcomp::cld(object = m1, Letters = letters)
 ```
 
+#### Model Shannon
 ```R
+model <- lm(diversity_shannon ~ compartment, data = div.2)
+Anova(model)
+m1 <- emmeans(model, "compartment")
+pairs(m1)
+multcomp::cld(object = m1, Letters = letters)
+```
 
+#### Model Simpson
+```R
+model <- lm(dominance_simpson ~ compartment, data = div.2)
+Anova(model)
+m1 <- emmeans(model, "compartment")
+pairs(m1)
+multcomp::cld(object = m1, Letters = letters)
+```
+
+#### Model Observed
+```R
+model <- lm(observed ~ compartment, data = div.2)
+Anova(model)
+m1 <- emmeans(model, "compartment")
+pairs(m1)
+multcomp::cld(object = m1, Letters = letters)
+```
+
+## Diversity - ITS
+
+### Plot
+
+Figure 2, panels E-H.
+
+```R
+div <- microbiome::alpha(ps.its, index = c("observed", "diversity_shannon", "dominance_simpson"))
+otus <- as.data.frame((otu_table(ps.its)))
+tree <- phy_tree(ps.its)
+div.pd <- pd(otus, tree, include.root = FALSE)
+div.2 <- cbind(sample_data(ps.its), div)
+div.2 <- cbind(div.2, div.pd)
+
+div_plot1 <- ggplot(div.2, aes(x = compartment, y = PD, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  labs(y = "Phylogenetic diversity") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        legend.position = "none") +
+  ylim(0, 40) +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot"))
+
+div_plot2 <- ggplot(div.2, aes(x = compartment, y = dominance_simpson, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  labs(y = "Simpson's dominance") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        legend.position = "none") +
+  ylim(0, 1) +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot"))
+
+div_plot3 <- ggplot(div.2, aes(x = compartment, y = diversity_shannon, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  labs(y = "Shannon's diversity") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        legend.position = "none") +
+  ylim(0, 6) +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot"))
+
+div_plot4 <- ggplot(div.2, aes(x = compartment, y = observed, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  labs(y = "Observed richness") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        legend.position = "none") +
+  ylim(0, 300) +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot"))
+
+
+px <- ggarrange(div_plot1, div_plot3, div_plot2, div_plot4,
+                ncol = 4,  align = "hv")
+px
+```
+
+### Test
+
+Figure 2 and Table S1.
+
+#### Model PD
+```R
+model <- lm(PD ~ compartment, data = div.2)
+Anova(model)
+m1 <- emmeans(model, "compartment")
+pairs(m1)
+multcomp::cld(object = m1, Letters = letters)
+```
+
+#### Model Shannon
+```R
+model <- lm(diversity_shannon ~ compartment, data = div.2)
+Anova(model)
+m1 <- emmeans(model, "compartment")
+pairs(m1)
+multcomp::cld(object = m1, Letters = letters)
+```
+
+#### Model Simpson
+```R
+model <- lm(dominance_simpson ~ compartment, data = div.2)
+Anova(model)
+m1 <- emmeans(model, "compartment")
+pairs(m1)
+multcomp::cld(object = m1, Letters = letters)
+```
+
+#### Model Observed
+```R
+model <- lm(observed ~ compartment, data = div.2)
+Anova(model)
+m1 <- emmeans(model, "compartment")
+pairs(m1)
+multcomp::cld(object = m1, Letters = letters)
 ```
 
 ```R
