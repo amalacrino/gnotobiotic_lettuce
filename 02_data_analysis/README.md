@@ -22,6 +22,7 @@ library("RColorBrewer")
 library("decontam")
 library("Maaslin2")
 library("Wrench")
+library("ggridges")
 ```
 
 ## Load data
@@ -501,20 +502,360 @@ px <- ggarrange(plot1, plot2, plot3, ncol = 3,  align = "hv")
 px
 ```
 
-```R
+## ASVs shared between compartments - 16S
 
+Figure 4, panel A.
+
+### Plot
+
+```R
+ps_test <- ps.16s
+
+get.numbers <- function(ps, group){
+  temp <- sample_data(ps)[["group"]] %in% group
+  ps.filt <- prune_samples(samples = temp, ps)
+  '%ni%' <- Negate('%in%')
+  
+  temp <- sample_data(ps.filt)[["compartment"]] %in% "root"
+  ps.filt.r <- prune_samples(samples = temp, ps.filt)
+  temp <- sample_data(ps.filt)[["compartment"]] %in% "shoot"
+  ps.filt.s <- prune_samples(samples = temp, ps.filt)
+  temp <- sample_data(ps.filt)[["compartment"]] %in% "inocula"
+  ps.filt.i <- prune_samples(samples = temp, ps.filt)
+  
+  ps.filt.r <- filter_taxa(ps.filt.r, function (x) {sum(x > 0) > 0}, prune=TRUE)
+  ps.filt.s <- filter_taxa(ps.filt.s, function (x) {sum(x > 0) > 0}, prune=TRUE)
+  ps.filt.i <- filter_taxa(ps.filt.i, function (x) {sum(x > 0) > 0}, prune=TRUE)
+  
+  ps.filt.r <- t(as.data.frame(otu_table(ps.filt.r)))
+  ps.filt.s <- t(as.data.frame(otu_table(ps.filt.s)))
+  ps.filt.i <- t(as.data.frame(otu_table(ps.filt.i)))
+  
+  ps.filt.r <- row.names(ps.filt.r)
+  ps.filt.s <- row.names(ps.filt.s)
+  ps.filt.i <- row.names(ps.filt.i)
+  
+
+  g <- Reduce(intersect, list(ps.filt.i, ps.filt.r, ps.filt.s))
+  a <- ps.filt.i %ni% unique(c(ps.filt.r, ps.filt.s))
+  b <- ps.filt.r %ni% unique(c(ps.filt.i, ps.filt.s))
+  c <- ps.filt.s %ni% unique(c(ps.filt.i, ps.filt.r))
+  
+  d <- Reduce(intersect, list(ps.filt.r, ps.filt.s)) %ni% g
+  e <- Reduce(intersect, list(ps.filt.s, ps.filt.i)) %ni% g
+  f <- Reduce(intersect, list(ps.filt.r, ps.filt.i)) %ni% g
+  
+
+  res <- data.frame("inoculum" = length(a[a == TRUE]),
+                    "roots" = length(b[b == TRUE]),
+                    "shoot"= length(c[c == TRUE]),
+                    "roots_shoot" = length(d[d == TRUE]),
+                    "shoot_inoculum"= length(e[e == TRUE]),
+                    "roots_inoculum"  = length(f[f == TRUE]),
+                    "all_compartments" = length(g))
+  return(res)
+}
+
+sampledf <- data.frame(sample_data(ps_test))
+list.inocula <- unique(sampledf$group)
+model_calculator <- sapply(list.inocula, get.numbers, ps = ps_test, simplify = FALSE, USE.NAMES = TRUE)
+res <- do.call(rbind, model_calculator)
+res <- setDT(res, keep.rownames = TRUE)[]
+colnames(res)[1] <- "sample_id"
+library(tidyverse)
+new_data <- melt(res, id='sample_id')
+new_dat1 <- new_data %>% 
+  arrange(sample_id)
+colnames(new_dat1)[3] <- "observed"
+
+generate.rand.ps <- function(psobject){
+  psx <- psobject
+  ps <- as.data.frame(otu_table(psx))
+  set.seed(100)
+  otu <- randomizeMatrix(ps,null.model = "frequency",iterations = 1000)
+  otu_table(psx) <- otu_table(otu, taxa_are_rows = F)
+  return(psx)
+}
+
+ps.random <- generate.rand.ps(ps_test)
+sampledf <- data.frame(sample_data(ps.random))
+list.inocula <- unique(sampledf$group)
+model_calculator <- sapply(list.inocula, get.numbers, ps = ps.random, simplify = FALSE, USE.NAMES = TRUE)
+res <- do.call(rbind, model_calculator)
+res <- setDT(res, keep.rownames = TRUE)[]
+colnames(res)[1] <- "sample_id"
+
+new_data <- melt(res, id='sample_id')
+new_dat2 <- new_data %>% 
+  arrange(sample_id)
+colnames(new_dat2)[3] <- "random"
+
+nd_df <- new_dat1
+nd_df$random <- new_dat2$random
+
+density_plot1 <- ggplot(nd_df, aes(x = observed, y = variable)) +
+  theme_bw(base_size = 15) +
+  geom_density_ridges(fill = "#a1d76a", rel_min_height = 0.01, alpha = 0.7, scale = 0.8,
+                      jittered_points = TRUE, position = position_points_jitter(width = 0.05, height = 0), point_shape = '|', point_size = 3, point_alpha = 1, alpha = 0.7) +
+  geom_density_ridges(aes(x = random, y = variable), fill = "#e9a3c9", rel_min_height = 0.01, alpha = 0.7, scale = 0.8,
+                      jittered_points = TRUE, position = position_points_jitter(width = 0.05, height = 0), point_shape = '*', point_size = 3, point_alpha = 1, alpha = 0.7) +
+  labs(x = "# of ASVs",
+       y = "intersections") +
+  theme(axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(color="black", face = "italic"),
+        legend.position = "none") +
+  xlim(0, 300)
+density_plot1
 ```
 
-```R
+### Test
 
+```R
+list.mol <- unique(nd_df$variable)
+model_calculator.1 <- sapply(list.mol,  
+                             function(x){
+                               df <- nd_df %>% filter(variable == x) %>% 
+                                 melt(id.vars = c("sample_id", "variable")) %>% 
+                                 dplyr::rename("compartment" = "variable", "group" = "variable.1")
+                               model <- glmer(value ~ group * (1|sample_id), data = df)
+                               aaa <-  Anova(model)
+                               aaa$sig = c(rep('',length(aaa$`Pr(>Chisq)`)))
+                               makeStars <- function(x){
+                                 stars <- c("****", "***", "**", "*", "ns")
+                                 vec <- c(0, 0.0001, 0.001, 0.01, 0.05, 1)
+                                 i <- findInterval(x, vec)
+                                 stars[i] }
+                               aaa$sig <- makeStars(aaa$`Pr(>Chisq)`)
+                               aaa <- aaa[1,]
+                               row.names(aaa) <- x
+                               return(aaa)},
+                             simplify = FALSE,USE.NAMES = TRUE)
+
+res <- do.call(rbind, model_calculator.1)
+res <- setDT(res, keep.rownames = TRUE)[]
+res
 ```
 
-```R
+## ASVs shared between compartments - ITS
 
+Figure 4, panel B.
+
+### Plot
+
+```R
+ps_test <- ps.its
+sampledf <- data.frame(sample_data(ps_test))
+sel <- sampledf %>% group_by(group) %>% summarise(n = n()) %>% filter(n > 2)
+temp <- sample_data(ps_test)[["group"]] %in% sel$group
+ps_test <- prune_samples(samples = temp, ps_test)
+sampledf <- data.frame(sample_data(ps_test))
+
+list.inocula <- unique(sampledf$group)
+model_calculator <- sapply(list.inocula, get.numbers, ps = ps_test, simplify = FALSE, USE.NAMES = TRUE)
+res <- do.call(rbind, model_calculator)
+res <- setDT(res, keep.rownames = TRUE)[]
+colnames(res)[1] <- "sample_id"
+
+new_data <- melt(res, id='sample_id')
+new_dat1 <- new_data %>% 
+  arrange(sample_id)
+colnames(new_dat1)[3] <- "observed"
+
+
+ps.random <- generate.rand.ps(ps_test)
+sampledf <- data.frame(sample_data(ps.random))
+list.inocula <- unique(sampledf$group)
+model_calculator <- sapply(list.inocula, get.numbers, ps = ps.random, simplify = FALSE, USE.NAMES = TRUE)
+res <- do.call(rbind, model_calculator)
+res <- setDT(res, keep.rownames = TRUE)[]
+colnames(res)[1] <- "sample_id"
+
+new_data <- melt(res, id='sample_id')
+new_dat2 <- new_data %>% 
+  arrange(sample_id)
+colnames(new_dat2)[3] <- "random"
+
+nd_df <- new_dat1
+nd_df$random <- new_dat2$random
+
+density_plot2 <- ggplot(nd_df, aes(x = observed, y = variable)) +
+  theme_bw(base_size = 15) +
+  geom_density_ridges(fill = "#a1d76a", rel_min_height = 0.01, alpha = 0.7, scale = 0.8,
+                      jittered_points = TRUE, position = position_points_jitter(width = 0.05, height = 0), point_shape = '|', point_size = 3, point_alpha = 1, alpha = 0.7) +
+  geom_density_ridges(aes(x = random, y = variable), fill = "#e9a3c9", rel_min_height = 0.01, alpha = 0.7, scale = 0.8,
+                      jittered_points = TRUE, position = position_points_jitter(width = 0.05, height = 0), point_shape = '*', point_size = 3, point_alpha = 1, alpha = 0.7) +
+  labs(x = "# of ASVs",
+       y = "intersections") +
+  theme(axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(color="black", face = "italic"),
+        legend.position = "none") +
+  xlim(0, 300)
+density_plot2
 ```
 
-```R
+### Test
 
+```R
+model_calculator.1 <- sapply(list.mol,  
+                             function(x){
+                               df <- nd_df %>% filter(variable == x) %>% 
+                                 melt(id.vars = c("sample_id", "variable")) %>% 
+                                 rename("compartment" = "variable", "group" = "variable.1")
+                               model <- glmer(value ~ group * (1|sample_id), data = df)
+                               aaa <-  Anova(model)
+                               aaa$sig = c(rep('',length(aaa$`Pr(>Chisq)`)))
+                               makeStars <- function(x){
+                                 stars <- c("****", "***", "**", "*", "ns")
+                                 vec <- c(0, 0.0001, 0.001, 0.01, 0.05, 1)
+                                 i <- findInterval(x, vec)
+                                 stars[i] }
+                               aaa$sig <- makeStars(aaa$`Pr(>Chisq)`)
+                               aaa <- aaa[1,]
+                               row.names(aaa) <- x
+                               return(aaa)},
+                             simplify = FALSE,USE.NAMES = TRUE)
+
+res <- do.call(rbind, model_calculator.1)
+res <- setDT(res, keep.rownames = TRUE)[]
+res
+```
+
+## beta-NTI - 16S
+
+### Plot and test
+
+Figure 5, panel A.
+
+```R
+comm <- as.data.frame(t(otu_table(ps.16s.ctrl_n)))
+phy <- phy_tree(ps.16s.ctrl_n)
+phy.dist <- cophenetic(phy)
+comm.sesmpd <- ses.mntd(comm, phy.dist, null.model = "richness", abundance.weighted = T, runs = 999)
+ks <- sample_data(ps.16s.ctrl_n)
+bnti <- cbind(ks, comm.sesmpd)
+
+betapart_plot1 <- ggplot(bnti, aes(x = compartment, y = -mntd.obs.z, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  stat_summary(fun.y=mean, geom="point", shape=20, size=5, color="black", fill="black") +
+  geom_hline(yintercept=2, linetype="dashed", color = "red") +
+  geom_hline(yintercept=-2, linetype="dashed", color = "red") +
+  labs(y = "beta-NTI") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(color="black", face = "italic"),
+        legend.position = "none") +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root gnotobiotic", "shoot gnotobiotic"), breaks = c("inocula", "root gnotobiotic", "shoot gnotobiotic")) +
+  ylim(-2.5,9)
+betapart_plot1
+```
+
+Figure 5, panel C.
+
+```R
+comm <- as.data.frame(t(otu_table(ps.16s_n)))
+phy <- phy_tree(ps.16s_n)
+phy.dist <- cophenetic(phy)
+comm.sesmpd <- ses.mntd(comm, phy.dist, null.model = "richness", abundance.weighted = T, runs = 999)
+ks <- sample_data(ps.16s_n)
+bnti <- cbind(ks, comm.sesmpd)
+bnti <- bnti[which(bnti$compartment != "inocula"),]
+
+betapart_plot1 <- ggplot(bnti, aes(x = compartment, y = -mntd.obs.z, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  stat_summary(fun.y=mean, geom="point", shape=20, size=5, color="black", fill="black") +
+  geom_hline(yintercept=2, linetype="dashed", color = "red") +
+  geom_hline(yintercept=-2, linetype="dashed", color = "red") +
+  labs(y = "beta-NTI") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(color="black", face = "italic"),
+        legend.position = "none") +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot")) +
+  ylim(-2.5, 9)
+betapart_plot1
+```
+
+## beta-NTI - ITS
+
+### Plot
+
+Figure 5, panel B.
+
+```R
+comm <- as.data.frame(t(otu_table(ps.its.ctrl_n)))
+phy <- phy_tree(ps.its.ctrl_n)
+phy.dist <- cophenetic(phy)
+comm.sesmpd <- ses.mntd(comm, phy.dist, null.model = "richness", abundance.weighted = T, runs = 999)
+ks <- sample_data(ps.its.ctrl_n)
+bnti <- cbind(ks, comm.sesmpd)
+
+betapart_plot1 <- ggplot(bnti, aes(x = compartment, y = -mntd.obs.z, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  stat_summary(fun.y=mean, geom="point", shape=20, size=5, color="black", fill="black") +
+  geom_hline(yintercept=2, linetype="dashed", color = "red") +
+  geom_hline(yintercept=-2, linetype="dashed", color = "red") +
+  labs(y = "beta-NTI") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(color="black", face = "italic"),
+        legend.position = "none") +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root gnotobiotic", "shoot gnotobiotic"), breaks = c("inocula", "root gnotobiotic", "shoot gnotobiotic")) +
+  ylim(-2.5,9)
+betapart_plot1
+```
+
+Figure 5, panel D.
+
+```R
+comm <- as.data.frame(t(otu_table(ps.its_n)))
+phy <- phy_tree(ps.its_n)
+phy.dist <- cophenetic(phy)
+comm.sesmpd <- ses.mntd(comm, phy.dist, null.model = "richness", abundance.weighted = T, runs = 999)
+ks <- sample_data(ps.its_n)
+bnti <- cbind(ks, comm.sesmpd)
+bnti <- bnti[which(bnti$compartment != "inocula"),]
+
+betapart_plot1 <- ggplot(bnti, aes(x = compartment, y = -mntd.obs.z, fill = compartment)) +
+  theme_bw(base_size = 15) +
+  geom_boxplot(outlier.colour="black", notch=F, outlier.shape=NA) +
+  stat_summary(fun.y=mean, geom="point", shape=20, size=5, color="black", fill="black") +
+  geom_hline(yintercept=2, linetype="dashed", color = "red") +
+  geom_hline(yintercept=-2, linetype="dashed", color = "red") +
+  labs(y = "beta-NTI") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x = element_text(color="black"),
+        axis.text.y = element_text(color="black"),
+        axis.title.y = element_text(color="black"),
+        panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(color="black", face = "italic"),
+        legend.position = "none") +
+  scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot")) +
+  ylim(-2.5, 9)
+betapart_plot1
 ```
 
 ## Taxa plots
@@ -596,9 +937,53 @@ taxa_plot
 
 ### Gnotobiotic plants
 
-Figure S4.
+Figure S4, panel A.
 
 ```R
+glom <- microbiome::transform(ps.16s.ctrl_n, "compositional")
+dat.ctrl <- psmelt(glom)
+dat.ctrl1 <- dat.ctrl %>% group_by(Sample, Genus) %>% summarise(cs = mean(Abundance)) %>% mutate(cs = cs/sum(cs)) 
 
+nb.cols <- length(unique(dat.ctrl1$Genus))
+mycolors <- colorRampPalette(brewer.pal(8, "Set3"))(nb.cols)
+taxa_plot <- ggplot(dat.ctrl1, aes(x = as.factor(Sample), y = cs, fill = Genus)) +
+                        theme_bw(base_size = 14) +
+                        geom_bar(stat="identity") +
+                        labs(y = "Relative proportion") +
+                        theme(legend.background = element_rect(fill="white"),
+                              legend.key = element_rect(fill="transparent"),
+                              legend.text = element_text(size = 12),
+                              axis.text.x = element_text(color="black"),
+                              axis.text.y = element_text(color="black"),
+                              panel.grid = element_blank()) +
+                        scale_y_continuous(labels = scales::percent) +
+                        scale_fill_manual(values = mycolors) +
+                        labs(y = "Relative abundance", x="") 
+taxa_plot
 ```
 
+Figure S4, panel B.
+
+```R
+glom <- microbiome::transform(ps.its.ctrl_n, "compositional")
+dat.ctrl <- psmelt(glom)
+dat.ctrl1 <- dat.ctrl %>% group_by(Sample, Genus) %>% summarise(cs = mean(Abundance)) %>% mutate(cs = cs/sum(cs)) 
+
+nb.cols <- length(unique(dat.ctrl1$Genus))
+mycolors <- colorRampPalette(brewer.pal(8, "Set3"))(nb.cols)
+taxa_plot <- ggplot(dat.ctrl1, aes(x = as.factor(Sample), y = cs, fill = Genus)) +
+                        theme_bw(base_size = 14) +
+                        geom_bar(stat="identity") +
+                        labs(y = "Relative proportion") +
+                        theme(legend.background = element_rect(fill="white"),
+                              legend.key = element_rect(fill="transparent"),
+                              legend.text = element_text(size = 12),
+                              axis.text.x = element_text(color="black"),
+                              axis.text.y = element_text(color="black"),
+                              panel.grid = element_blank()) +
+                        scale_y_continuous(labels = scales::percent) +
+                        scale_fill_manual(values = mycolors) +
+                        labs(y = "Relative abundance", x="") 
+ggsave(taxa_plot, filename = "figures/taxa_its_ctrl.pdf", dpi = 600,  width = 8, height = 5, units = "in")
+taxa_plot
+```
