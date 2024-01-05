@@ -111,8 +111,74 @@ ps.16s.ctrl_n <- wrench.norm.ps(ps.16s.ctrl)
 ps.its.ctrl_n <- wrench.norm.ps(ps.its.ctrl)
 ```
 
-```R
+## PERMANOVA - 16S
 
+```R
+sampledf <- data.frame(sample_data(ps.16s_n))
+dist.mat <- phyloseq::distance(ps.16s_n, method = "unifrac")
+perm <- how(nperm = 999)
+set.seed(100)
+pmv <- adonis2(dist.mat ~ compartment, data = sampledf, permutations = perm)
+pmv
+
+RVAideMemoire::pairwise.perm.manova(dist.mat, sampledf$compartment, nperm = 999, progress = TRUE, p.method = "fdr", F = T, R2 = T)
+```
+
+## NMDS - 16S
+
+Figure 1, panels A and B
+
+```R
+plot.nmds <- function(ps, dist){
+  dist.mat <- phyloseq::distance(ps, method = dist)
+  cap_ord <- ordinate(physeq = ps, method = "NMDS", distance = dist.mat, formula = ~ 1)
+  cap_plot <- plot_ordination(physeq = ps, ordination = cap_ord, axes = c(1,2)) +
+    theme_bw(base_size = 20) +
+    stat_ellipse(mapping = aes(fill = compartment),
+                   alpha = 0.4,
+                   geom = "polygon",
+                   show.legend=T) +
+    geom_point(mapping = aes(color = compartment), size = 5) +
+    theme(legend.title= element_blank(), 
+          legend.background = element_rect(color = NA),
+          legend.text = element_text(size = 12),
+          axis.text.x = element_text(color="black"),
+          axis.text.y = element_text(color="black"),
+          panel.grid = element_blank()) +
+    scale_color_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot")) +
+    scale_fill_manual(name = "Legend", values=c("#7570b3", "#d95f02", "#1b9e77"), labels = c("inocula", "root", "shoot"), breaks = c("inocula", "root", "shoot"))
+}
+
+plot1 <- plot.nmds(ps.16s_n, "unifrac")
+plot2 <- plot.nmds(ps.16s_n, "wunifrac")
+
+px <- ggarrange(plot1, plot2, ncol = 2,  align = "hv", common.legend = T)
+px
+```
+
+## PERMANOVA - ITS
+
+```R
+sampledf <- data.frame(sample_data(ps.its_n))
+dist.mat <- phyloseq::distance(ps.its_n, method = "unifrac")
+perm <- how(nperm = 999)
+set.seed(100)
+pmv <- adonis2(dist.mat ~ compartment, data = sampledf, permutations = perm)
+pmv
+
+RVAideMemoire::pairwise.perm.manova(dist.mat, sampledf$compartment, nperm = 999, progress = TRUE, p.method = "fdr", F = T, R2 = T)
+```
+
+## NMDS - ITS
+
+Figure 1, panels C and D
+
+```R
+plot1 <- plot.nmds(ps.its_n, "unifrac")
+plot2 <- plot.nmds(ps.its_n, "wunifrac")
+
+px <- ggarrange(plot1, plot2, ncol = 2,  align = "hv", common.legend = T)
+px
 ```
 
 ```R
@@ -150,3 +216,16 @@ ps.its.ctrl_n <- wrench.norm.ps(ps.its.ctrl)
 ```R
 
 ```
+
+```R
+
+```
+
+```R
+
+```
+
+```R
+
+```
+
