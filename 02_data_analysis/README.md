@@ -420,8 +420,85 @@ pairs(m1)
 multcomp::cld(object = m1, Letters = letters)
 ```
 
-```R
+## Differential abundance of microbial taxa - 16S
 
+Figure 3, panels A-C.
+
+```R
+diff.taxa.fun <- function(ps, g1, g2){
+  ks <- sample_data(ps)[["compartment"]] %in% c(g1, g2)
+  ps_da <- prune_samples(samples = ks, ps)
+  mas_1 <- Maaslin2(
+    input_data = data.frame(t(otu_table(ps_da))),
+    input_metadata = data.frame(sample_data(ps_da)),
+    output = "demo_output6", 
+    normalization = "NONE",
+    transform = "LOG",
+    analysis_method = "LM",
+    max_significance = 0.05,
+    fixed_effects = "compartment",
+    random_effects = c("group"),
+    correction = "BH",
+    standardize = FALSE,
+    cores = 4)
+  df.diff <- mas_1$results
+  tax.table <- as.data.frame(tax_table(ps))
+  tax.table <- setDT(tax.table, keep.rownames = TRUE)[]
+  tx <- merge(df.diff, tax.table, by.x = "feature", by.y = "rn")
+  return(tx)
+}
+
+plot.diff.taxa <- function(df, g1, g2, title){
+  df.diff <- df
+  df.diff$diffexpressed <- "no changes"
+  df.diff$diffexpressed[df.diff$coef > 0 & df.diff$qval < 0.05] <- paste0(g2)
+  df.diff$diffexpressed[df.diff$coef < 0 & df.diff$qval < 0.05] <- paste0(g1)
+  plot <- ggplot(data=df.diff) +
+        theme_bw(base_size = 12) +
+        geom_point(aes(x = coef, y = -log10(qval), colour = diffexpressed)) +
+        scale_color_manual(values=c("blue", "red", "black")) +
+        geom_vline(xintercept=0, col="black", linetype = "longdash") +
+        geom_hline(yintercept=-log10(0.05), col="black", linetype = "longdash") +
+        theme(panel.grid = element_blank(),
+              panel.background = element_rect(fill = "white", 
+                                              colour = "white", 
+                                              size = 0.5, linetype = "solid"),
+              legend.position="none",
+              panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+        ggtitle(paste0(title)) +
+        xlab(expression(paste(Log[2], " Fold Changes"))) +
+        ylab(expression(paste(-Log[10], " P"))) +
+        scale_color_manual(name = "Legend", values=c("#4daf4a", "#e41a1c", "#000000"), labels = c(g2, g1), breaks =c(g2, g1))
+  return(plot)
+}
+
+df.da.IR.16s <- diff.taxa.fun(ps.16s_n, "inocula", "root")
+df.da.IS.16s <- diff.taxa.fun(ps.16s_n, "inocula", "shoot")
+df.da.RS.16s <- diff.taxa.fun(ps.16s_n, "root", "shoot")
+
+plot1 <- plot.diff.taxa(df.da.IR.16s, "inocula", "root", "root vs inocula")
+plot2 <- plot.diff.taxa(df.da.IS.16s, "inocula", "shoot", "shoot vs inocula")
+plot3 <- plot.diff.taxa(df.da.RS.16s, "root", "shoot", "shoot vs root")
+
+px <- ggarrange(plot1, plot2, plot3, ncol = 3,  align = "hv")
+px
+```
+
+## Differential abundance of microbial taxa - ITS
+
+Figure 3, panels D-F.
+
+```R
+df.da.IR.its <- diff.taxa.fun(ps.its_n, "inocula", "root")
+df.da.IS.its <- diff.taxa.fun(ps.its_n, "inocula", "shoot")
+df.da.RS.its <- diff.taxa.fun(ps.its_n, "root", "shoot")
+
+plot1 <- plot.diff.taxa(df.da.IR.its, "inocula", "root", "root vs inocula")
+plot2 <- plot.diff.taxa(df.da.IS.its, "inocula", "shoot", "shoot vs inocula")
+plot3 <- plot.diff.taxa(df.da.RS.its, "root", "shoot", "shoot vs root")
+
+px <- ggarrange(plot1, plot2, plot3, ncol = 3,  align = "hv")
+px
 ```
 
 ```R
@@ -440,17 +517,86 @@ multcomp::cld(object = m1, Letters = letters)
 
 ```
 
-```R
+## Taxa plots
 
-```
+### 16S
 
-```R
-
-```
+Figure S2.
 
 ```R
+glom <- microbiome::aggregate_taxa(ps.16s_n, "Genus")
+glom <- microbiome::transform(glom, "compositional")
+dat <- psmelt(glom)
+filt.gen <- dat %>% group_by(Genus) %>% summarise(mean = mean(Abundance)) %>% filter(mean <= 0.01)
+dat <- subset(dat, !(OTU %in% filt.gen$Genus))
+dat <- dat %>% group_by(Genus) %>% summarise(cs = mean(Abundance)) %>% mutate(cs = cs/sum(cs)) 
 
+
+dat <- psmelt(glom)
+filt.gen <- dat %>% group_by(Genus) %>% summarise(mean = mean(Abundance)) %>% filter(mean <= 0.01)
+dat <- subset(dat, !(OTU %in% filt.gen$Genus))
+dat <- dat %>% group_by(compartment, Genus) %>% summarise(cs = mean(Abundance)) %>% mutate(cs = cs/sum(cs)) 
+
+nb.cols <- length(unique(dat$Genus))
+mycolors <- colorRampPalette(brewer.pal(8, "Set3"))(nb.cols)
+
+taxa_plot <- ggplot(dat, aes(x = as.factor(compartment), y = cs, fill = Genus)) +
+                        theme_bw(base_size = 14) +
+                        geom_bar(stat="identity") +
+                        labs(y = "Relative proportion") +
+                        theme(legend.background = element_rect(fill="white"),
+                              legend.key = element_rect(fill="transparent"),
+                              legend.text = element_text(size = 12),
+                              axis.text.x = element_text(color="black"),
+                              axis.text.y = element_text(color="black"),
+                              panel.grid = element_blank()) +
+                        scale_y_continuous(labels = scales::percent) +
+                        scale_fill_manual(values = mycolors) +
+                        labs(y = "Relative abundance", x="")
+taxa_plot
 ```
+
+### ITS
+
+Figure S3.
+
+```R
+glom <- microbiome::aggregate_taxa(ps.its_n, "Genus")
+glom <- microbiome::transform(glom, "compositional")
+dat <- psmelt(glom)
+filt.gen <- dat %>% group_by(Genus) %>% summarise(mean = mean(Abundance)) %>% filter(mean <= 0.01)
+dat <- subset(dat, !(OTU %in% filt.gen$Genus))
+dat <- dat %>% group_by(Genus) %>% summarise(cs = mean(Abundance)) %>% mutate(cs = cs/sum(cs)) 
+
+
+dat <- psmelt(glom)
+filt.gen <- dat %>% group_by(Genus) %>% summarise(mean = mean(Abundance)) %>% filter(mean <= 0.01)
+dat <- subset(dat, !(OTU %in% filt.gen$Genus))
+dat <- dat %>% group_by(compartment, Genus) %>% summarise(cs = mean(Abundance)) %>% mutate(cs = cs/sum(cs)) 
+
+nb.cols <- length(unique(dat$Genus))
+mycolors <- colorRampPalette(brewer.pal(8, "Set3"))(nb.cols)
+
+taxa_plot <- ggplot(dat, aes(x = as.factor(compartment), y = cs, fill = Genus)) +
+                        theme_bw(base_size = 14) +
+                        geom_bar(stat="identity") +
+                        labs(y = "Relative proportion") +
+                        theme(legend.background = element_rect(fill="white"),
+                              legend.key = element_rect(fill="transparent"),
+                              legend.text = element_text(size = 12),
+                              axis.text.x = element_text(color="black"),
+                              axis.text.y = element_text(color="black"),
+                              panel.grid = element_blank()) +
+                        scale_y_continuous(labels = scales::percent) +
+                        scale_fill_manual(values = mycolors) +
+                        labs(y = "Relative abundance", x="") 
+ggsave(taxa_plot, filename = "figures/taxa_its.pdf", dpi = 600,  width = 5, height = 6, units = "in")
+taxa_plot
+```
+
+### Gnotobiotic plants
+
+Figure S4.
 
 ```R
 
