@@ -931,7 +931,6 @@ taxa_plot <- ggplot(dat, aes(x = as.factor(compartment), y = cs, fill = Genus)) 
                         scale_y_continuous(labels = scales::percent) +
                         scale_fill_manual(values = mycolors) +
                         labs(y = "Relative abundance", x="") 
-ggsave(taxa_plot, filename = "figures/taxa_its.pdf", dpi = 600,  width = 5, height = 6, units = "in")
 taxa_plot
 ```
 
